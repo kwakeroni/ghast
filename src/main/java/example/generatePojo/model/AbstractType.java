@@ -58,6 +58,96 @@ public abstract class AbstractType implements Type {
         }
     }
 
+    public static Type ofExternal(final String simpleName, final Type... params){
+        return new Type() {
+            @Override
+            public String getSimpleName() {
+                if (params.length == 0){
+                    return simpleName;
+                }
+                StringBuilder builder = new StringBuilder(simpleName).append('<');
+                boolean first = true;
+                for (Type param : params){
+                    if (first){
+                        first = false;
+                    } else {
+                        builder.append(", ");
+                    }
+
+                    builder.append(param.getSimpleName());
+                }
+                return builder.append('>').toString();
+            }
+
+            @Override
+            public boolean isEqualType(java.lang.reflect.Type type) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Class<?> getRawClass() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Type getParameterType(int index) {
+                return params[index];
+            }
+
+            @Override
+            public Iterable<Class<?>> getTypeDeclarationDependencies() {
+                return dependenciesOf(Arrays.asList(params));
+            }
+        };
+    }
+
+    public static Type ofGeneric(final Class<?> rawClass, final Type... params){
+        if (rawClass.getTypeParameters().length != params.length){
+            throw new IllegalArgumentException("Cannot parameterize " + rawClass + " with " + params.length + " type parameters");
+        }
+
+        return new Type() {
+            @Override
+            public String getSimpleName() {
+                if (params.length == 0){
+                    return rawClass.getSimpleName();
+                }
+                StringBuilder builder = new StringBuilder(rawClass.getSimpleName()).append('<');
+                boolean first = true;
+                for (Type param : params){
+                    if (first){
+                        first = false;
+                    } else {
+                        builder.append(", ");
+                    }
+                    builder.append(param.getSimpleName());
+
+                }
+                return builder.append('>').toString();
+            }
+
+            @Override
+            public boolean isEqualType(java.lang.reflect.Type type) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Class<?> getRawClass() {
+                return rawClass;
+            }
+
+            @Override
+            public Type getParameterType(int index) {
+                return params[index];
+            }
+
+            @Override
+            public Iterable<Class<?>> getTypeDeclarationDependencies() {
+                return Iterables.concat(Collections.singleton(rawClass), dependenciesOf(Arrays.asList(params)));
+            }
+        };
+    }
+
     private static Type of(final Class<?> clazz){
         return new Type() {
 

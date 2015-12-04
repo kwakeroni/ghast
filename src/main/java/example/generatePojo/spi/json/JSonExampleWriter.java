@@ -1,7 +1,7 @@
 package example.generatePojo.spi.json;
 
 import example.generatePojo.PojoExtractor;
-import example.generatePojo.spi.PojoWriterSupport;
+import example.generatePojo.spi.CodeWriterSupport;
 import example.generatePojo.model.Pojo;
 import example.generatePojo.model.Property;
 import example.generatePojo.model.Type;
@@ -21,7 +21,7 @@ import java.util.Iterator;
 /**
  * @author Maarten Van Puymbroeck
  */
-public class JSonExampleWriter extends PojoWriterSupport<Pojo> {
+public class JSonExampleWriter extends CodeWriterSupport<Pojo> {
 
     private static final Collection<Class<?>> INTEGER_CLASSES = Arrays.<Class<?>> asList(BigInteger.class, Long.class, Long.TYPE, Integer.class, Integer.TYPE, Short.class, Short.TYPE, Byte.class, Byte.TYPE);
     private static final Collection<Class<?>> DECIMAL_CLASSES = Arrays.<Class<?>> asList(BigDecimal.class, Double.class, Double.TYPE, Float.class, Float.TYPE);

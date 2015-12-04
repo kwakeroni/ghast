@@ -12,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.text.MessageFormat;
 import java.util.Arrays;
 
+import static example.generatePojo.spi.impl.PojoImplWriter.*;
+
 /**
  * @author Maarten Van Puymbroeck
  */

@@ -4,7 +4,7 @@ import example.generatePojo.model.AbstractType;
 import example.generatePojo.model.Pojo;
 import example.generatePojo.model.Property;
 import example.generatePojo.model.Type;
-import example.generatePojo.spi.PojoWriterSupport;
+import example.generatePojo.spi.CodeWriterSupport;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
@@ -35,7 +35,7 @@ public class ExternalizablePlugin implements Plugin {
     public Iterable<String> getMethods(Pojo pojo) {
         return Iterables.concat(
                                    getExternalizableRead(pojo),
-                                   PojoWriterSupport.emptyLine(),
+                                   CodeWriterSupport.emptyLine(),
                                    getExternalizableWrite(pojo)
         );
     }

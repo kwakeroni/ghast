@@ -1,10 +1,12 @@
 package example.generatePojo.spi.impl;
 
+import com.google.common.base.Optional;
 import example.generatePojo.Util;
 import example.generatePojo.model.Pojo;
 import example.generatePojo.model.Property;
 import example.generatePojo.model.Type;
-import example.generatePojo.spi.PojoWriterSupport;
+import example.generatePojo.spi.ClassWriterSupport;
+import example.generatePojo.spi.CodeWriterSupport;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
@@ -19,7 +21,7 @@ import java.util.List;
 /**
  * @author Maarten Van Puymbroeck
  */
-public class PojoImplWriter extends PojoWriterSupport<Pojo> {
+public class PojoImplWriter extends ClassWriterSupport<Pojo> {
 
     private List<Plugin> plugins;
 
@@ -42,67 +44,30 @@ public class PojoImplWriter extends PojoWriterSupport<Pojo> {
         return Paths.get(pojo.getPackage().replaceAll("\\.", "/")).resolve(pojo.getSimpleName() + ".java");
     }
 
-    @Override
-    protected Iterable<String> toCode(Pojo pojo) {
-        return Iterables.concat(
-                                   getPackageDeclaration(pojo),
-                                   emptyLine(),
-                                   getImports(pojo),
-                                   emptyLine(),
-                                   getClassCode(pojo)
-        );
-    }
-
-    private Iterable<String> getPackageDeclaration(Pojo pojo) {
-        return Collections.singleton("package " + pojo.getPackage() + ";");
-    }
-
-    private Iterable<String> getImports(Pojo pojo) {
-        return
-
-            Iterables.transform(Iterables.concat(Iterables.transform(this.plugins, imports(pojo))),
-                                   importClass()
-
-            );
+    protected Iterable<String> getPackageDeclaration(Pojo pojo) {
+        return getPackageDeclaration(pojo.getPackage());
     }
 
 
-    private Iterable<String> getClassCode(Pojo pojo) {
-        return Util.concat(
-                              getClassSignature(pojo) + " {",
-                              Iterables.concat(
-                                                  emptyLine(),
-                                                  getFields(pojo),
-                                                  getMethods(pojo)),
-                              "}"
-        );
+    protected Iterable<String> getImports(Pojo pojo) {
+        return getImports(Iterables.concat(Iterables.transform(this.plugins, imports(pojo))));
     }
 
-    private Iterable<String> getMethods(Pojo pojo) {
+
+
+
+    protected Iterable<String> getMethods(Pojo pojo) {
         return Iterables.concat(Iterables.transform(this.plugins, methods(pojo)));
     }
 
 
-    private String getClassSignature(Pojo pojo) {
-        StringBuilder builder = new StringBuilder("public class ");
-        builder.append(pojo.getSimpleName());
-        if (pojo.getExtends() != null) {
-            builder.append(" extends " + pojo.getExtends().getSimpleName());
-        }
-        boolean first = true;
-        for (Type impl : Iterables.concat(Iterables.transform(plugins, implementedInterfaces(pojo)))) {
-            if (first) {
-                first = false;
-                builder.append(" implements ");
-            } else {
-                builder.append(", ");
-            }
-            builder.append(impl.getSimpleName());
-        }
-        return builder.toString();
+    protected String getClassSignature(Pojo pojo) {
+        return getClassSignature(pojo.getSimpleName(),
+                                 Optional.fromNullable(pojo.getExtends()),
+                                 Iterables.concat(Iterables.transform(plugins, implementedInterfaces(pojo))));
     }
 
-    private Iterable<String> getFields(Pojo pojo) {
+    protected Iterable<String> getFields(Pojo pojo) {
         return Iterables.transform(pojo.getProperties(), fieldDeclaration());
     }
 
@@ -126,15 +91,6 @@ public class PojoImplWriter extends PojoWriterSupport<Pojo> {
             @Override
             public Iterable<Class<?>> apply(Plugin input) {
                 return input.getImportedClasses(pojo);
-            }
-        };
-    }
-
-    private Function<Class<?>, String> importClass() {
-        return new Function<Class<?>, String>() {
-            @Override
-            public String apply(Class<?> input) {
-                return "import " + input.getName() + ";";
             }
         };
     }
