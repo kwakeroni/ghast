@@ -114,7 +114,7 @@ public class PojoImplWriter extends ClassWriterSupport<Pojo> {
     }
 
     private static List<Plugin> asList(Plugin first, Plugin... rest) {
-        List<Plugin> list = new ArrayList<>(1 + rest.length);
+        List<Plugin> list = new ArrayList<>(1 + ((rest == null)? 0 : rest.length));
         list.add(new BasicPlugin());
         list.addAll(Arrays.asList(rest));
         return list;

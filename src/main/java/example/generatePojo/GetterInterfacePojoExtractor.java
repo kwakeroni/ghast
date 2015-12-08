@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -48,14 +49,14 @@ public class GetterInterfacePojoExtractor implements PojoExtractor<Class<?>> {
         @Override
         public Iterable<Property> getProperties() {
 
-            return Iterables.<Method, Property>transform(
+            return Iterables.<Method, Property>transform( Iterables.filter(
                                                             Iterables.concat(
                                                                                 Iterables.transform(
                                                                                                        Iterables.<Class<?>>concat(
                                                                                                                                      Collections.singleton(this.getterInterface),
                                                                                                                                      Util.getRecursiveInterfaces(this.getterInterface)),
                                                                                                        Util.directMethods())
-                                                            ), toGetterProperty()
+                                                            ), distinct()), toGetterProperty()
             );
 
         }
@@ -129,6 +130,20 @@ public class GetterInterfacePojoExtractor implements PojoExtractor<Class<?>> {
             @Override
             public boolean apply(Class<?> input) {
                 return input.isInterface();
+            }
+        };
+    }
+
+    public static Predicate<Method> distinct() {
+        return new Predicate<Method>() {
+            private final Set<Method> encountered = new HashSet<>();
+            @Override
+            public boolean apply(Method input) {
+                if (encountered.contains(input)){
+                    return false;
+                }
+                encountered.add(input);
+                return true;
             }
         };
     }

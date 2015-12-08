@@ -1,218 +1,80 @@
 package example.generatePojo;
 
-import example.generatePojo.model.AbstractPojo;
+import com.google.common.base.Supplier;
+import example.generatePojo.dependency.ClassSource;
 import example.generatePojo.model.Pojo;
-import example.generatePojo.model.Property;
-import example.generatePojo.model.Type;
-import example.generatePojo.spi.impl.Plugin;
-import example.generatePojo.spi.impl.PojoImplWriter;
-import example.generatePojo.spi.json.JSonExampleWriter;
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
-import example.generatePojo.spi.mapper.FailureMapperWriter;
 
+import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static example.generatePojo.dependency.ClassSource.*;
 
 /**
  * @author Maarten Van Puymbroeck
  */
-public class Generator {
+public abstract class GenerationRun {
 
-
-    public final boolean PRINT_CONTENTS = true;
-    public final boolean WRITE_CONTENTS = false;
-    public final Plugin[] PLUGINS = new Plugin[]{
-//                                                           new ExternalizablePlugin(),
-    };
-//    public static final GeneratePojo GENERATE = pojoImpl(PLUGINS);
-    public final GeneratePojo GENERATE = jsonExample();
-//    public static final GeneratePojo GENERATE = failureMapper();
-    public final String RESOURCE_TYPE = "command";
-    public final String PARENT_DIR = "/home/talend/voo-services/salescommissioning/";
-    public final String PROJECT_DIR = PARENT_DIR + "salescommissioning-commandhandlers/salescommissioning-startmobilecommissioning/salescommissioning-startmobilecommissioning-core";
-    public final String TARGET_PACKAGE = "be.voo.esb.services.salescommissioning.startmobilecommissioning.core." + RESOURCE_TYPE;
-    public final String[] SOURCE_CLASSES = new String[]{
-                    "be.voo.esb.services.salescommissioning.api.command.StartMobileCommissioning"
-    };
-
+    protected final Path targetModule;
+    protected final boolean printContents;
+    protected final boolean writeContents;
+    protected final String resourceType;
+    protected final GenerationContext context;
+    
     public static final Function<String, String> NAMING_STRATEGY = Util.messageFormat("{0}Command");
+    
+    protected GenerationRun(Builder<?, ?> builder){
+        targetModule = builder.targetModule;
+        printContents = builder.printContents;
+        writeContents = builder.writeContents;
+        resourceType = builder.resourceType;
+        context = builder.context;
 
+    }
+    
 
-    public static void main(String[] args) throws Exception {
-        MavenClassSource mavenClass = MavenClassSource.newBuilder(Generator.class.getClassLoader())
-                                          .atRepository("/home/talend/.m2/repository")
-//                                          .addArtefact("be.voo.esb.services.mobileactivation", "mobileactivation-api", "1.0.0-SNAPSHOT")
-                                          .addArtefact("be.voo.esb.services.mobilelifecycle", "mobilelifecycle-api", "1.0.0-SNAPSHOT")
-                                          .addCompilationTarget(Paths.get(PARENT_DIR, "salescommissioning-api"))
-                                          .addCompilationTarget(Paths.get(PROJECT_DIR))
-                                          .build();
-
-
+    public void generate() throws Exception {
         PojoExtractor<Class<?>> extractor = new GetterInterfacePojoExtractor();
 
-        generate(GENERATE, mavenClass, extractor, SOURCE_CLASSES);
+        generate(extractor, this.context.getSources());
 
     }
 
-    private static void generate(GeneratePojo generationType, MavenClassSource mavenClass, PojoExtractor<Class<?>> extractor, String... classes) throws Exception {
-        for (String clazz : classes) {
-            generate(generationType, extractor, mavenClass.forName(clazz));
+    private void generate(PojoExtractor<Class<?>> extractor, Iterable<Class<?>> classes) throws Exception {
+        for (Class<?> clazz : classes) {
+            generate(extractor, clazz);
         }
     }
 
-    private static void generate(GeneratePojo generationType, PojoExtractor<Class<?>> extractor, Class<?> start) throws Exception {
+    private void generate(PojoExtractor<Class<?>> extractor, Class<?> start) throws Exception {
 
         System.out.println(start);
 
         Pojo startPojo = extractor.getPojo(start);
 
-        generationType.generate(startPojo, extractor);
+        generate(startPojo, extractor);
 
-    }
-
-
-    private void generateJSonExample(Pojo startPojo, PojoExtractor<Class<?>> extractor) throws Exception {
-        JSonExampleWriter writer = new JSonExampleWriter(Paths.get(PROJECT_DIR, "/src/test/resources/" + RESOURCE_TYPE + "/"), extractor);
-
-        if (PRINT_CONTENTS) writer.printOut(startPojo);
-        if (WRITE_CONTENTS) writer.write(startPojo);
         System.out.println("--");
     }
+    
+    protected abstract void generate(Pojo pojo, PojoExtractor<Class<?>> extractor) throws Exception;    
+
+//    private void generateFailureMapper(Pojo startPojo, PojoExtractor<Class<?>> extractor) throws Exception {
+//
+//        FailureMapperWriter writer = new FailureMapperWriter(Paths.get(PROJECT_DIR, "/src/main/java"));
+//
+//        Pojo pojo = toPojoImpl(TARGET_PACKAGE, Util.messageFormat("{0}")).apply(startPojo);
+//
+//        if (PRINT_CONTENTS) writer.printOut(pojo);
+//        if (WRITE_CONTENTS) writer.write(pojo);
+//        System.out.println("--");
+//    }
 
 
-    private void generatePojoImpl(Pojo startPojo, PojoExtractor<Class<?>> extractor, Plugin... plugins) throws Exception {
 
-        Iterable<Pojo> pojoSrcs = Util.distinct(Util.recurse(startPojo, dependentPojos(extractor)), isEqualPojo());
-
-
-        Iterable<Pojo> pojoImpls = Iterables.transform(
-                                                          pojoSrcs,
-                                                          toPojoImpl(TARGET_PACKAGE, NAMING_STRATEGY));
-
-
-        PojoImplWriter writer = new PojoImplWriter(Paths.get(PROJECT_DIR, "/src/main/java"), plugins);
-
-        for (Pojo pojo : pojoImpls) {
-            try {
-                if (PRINT_CONTENTS) writer.printOut(pojo);
-                if (WRITE_CONTENTS) writer.write(pojo);
-            } catch (Exception exc) {
-                exc.printStackTrace();
-            }
-            System.out.println("--");
-        }
-
-
-    }
-
-    private void generateFailureMapper(Pojo startPojo, PojoExtractor<Class<?>> extractor) throws Exception {
-
-        FailureMapperWriter writer = new FailureMapperWriter(Paths.get(PROJECT_DIR, "/src/main/java"));
-
-        Pojo pojo = toPojoImpl(TARGET_PACKAGE, Util.messageFormat("{0}")).apply(startPojo);
-
-        if (PRINT_CONTENTS) writer.printOut(pojo);
-        if (WRITE_CONTENTS) writer.write(pojo);
-        System.out.println("--");
-    }
-
-    private static Util.BiPredicate<Pojo> isEqualPojo() {
-        return new Util.BiPredicate<Pojo>() {
-            @Override
-            public boolean evaluate(Pojo t1, Pojo t2) {
-                return t1.getName().equals(t2.getName());
-            }
-        };
-    }
-
-    private static Function<Pojo, Pojo> toPojoImpl(final String pkg, final Function<String, String> nameMapper) {
-        return new Function<Pojo, Pojo>() {
-            @Override
-            public Pojo apply(final Pojo input) {
-                return new AbstractPojo() {
-                    @Override
-                    public Iterable<Property> getProperties() {
-                        return input.getProperties();
-                    }
-
-                    @Override
-                    public String getPackage() {
-                        return pkg;
-                    }
-
-                    @Override
-                    public String getSimpleName() {
-                        return nameMapper.apply(input.getSimpleName());
-                    }
-
-                    @Override
-                    public String getName() {
-                        return getPackage() + "." + getSimpleName();
-                    }
-
-                    @Override
-                    public Type getExtends() {
-                        return input.getExtends();
-                    }
-
-                    @Override
-                    public Iterable<Type> getImplements() {
-                        return input.getImplements();
-                    }
-
-                    @Override
-                    public String toString() {
-                        return generateToString();
-                    }
-
-                };
-            }
-        };
-    }
-
-    private static Function<Class<?>, Pojo> toPojo(final PojoExtractor<Class<?>> extractor) {
-        return new Function<Class<?>, Pojo>() {
-            @Override
-            public Pojo apply(Class<?> input) {
-                return extractor.getPojo(input);
-            }
-        };
-    }
-
-    private static Function<Pojo, Iterable<Pojo>> dependentPojos(final PojoExtractor<Class<?>> extractor) {
-        return new Function<Pojo, Iterable<Pojo>>() {
-            @Override
-            public Iterable<Pojo> apply(Pojo input) {
-                return Iterables.transform(dependentPojoClasses(input), toPojo(extractor));
-            }
-        };
-    }
-
-
-    private static Iterable<Class<?>> dependentPojoClasses(Pojo pojo) {
-        return Iterables.filter(dependentClasses(pojo), Predicates.and(GetterInterfacePojoExtractor.isPojoInterface(), inPackage(pojo.getPackage())));
-    }
-
-    private static Iterable<Class<?>> dependentClasses(Pojo pojo) {
-        return Util.distinct(Iterables.concat(
-                                                 Iterables.transform(
-                                                                        pojo.getProperties(), Functions.compose(Type.$getTypeDeclarationDependencies, Property.$getType)
-                                                 )));
-    }
-
-    private static Function<Pojo, Iterable<Class<?>>> dependentClasses() {
-        return new Function<Pojo, Iterable<Class<?>>>() {
-            @Override
-            public Iterable<Class<?>> apply(Pojo input) {
-                return dependentClasses(input);
-            }
-        };
-    }
-
-    private static void printlns(Iterable<?> coll) {
+    protected static void printlns(Iterable<?> coll) {
         System.out.println("[");
         for (Object o : coll) {
             System.out.println(o);
@@ -230,34 +92,69 @@ public class Generator {
     }
 
 
-    private static interface GeneratePojo {
-        void generate(Pojo pojo, PojoExtractor<Class<?>> extractor) throws Exception;
+    public static abstract class Builder<BuilderType, ParentBuilder> {
+        private Path targetModule;
+        private ParentBuilder parent;
+        private GenerationContext context;
+
+        private boolean printContents = false;
+        private boolean writeContents = false;
+        private String resourceType;
+
+
+        private final BuilderType result;
+
+        protected Builder(){
+            this.result = (BuilderType) this;
+        }
+
+        protected Builder(BuilderType result) {
+            this.result = result;
+        }
+
+        public BuilderType printGeneratedContent() {
+            return printGeneratedContent(true);
+        }
+        public BuilderType printGeneratedContent(boolean doPrint) {
+            this.printContents = doPrint;
+            return this.result;
+        }
+
+        public BuilderType writeGeneratedContent() {
+            return writeGeneratedContent(true);
+        }
+        public BuilderType writeGeneratedContent(boolean doWrite) {
+            this.writeContents = doWrite;
+            return this.result;
+        }
+
+        Builder<BuilderType, ParentBuilder> target(Path targetModule){
+            this.targetModule = targetModule;
+            return this;
+        }
+
+        <NewParentBuilder> Builder<BuilderType, NewParentBuilder> parent(NewParentBuilder parent){
+            Builder<BuilderType, NewParentBuilder> myself = (Builder<BuilderType, NewParentBuilder>) this;
+            myself.parent = parent;
+            return myself;
+        }
+
+        public BuilderType resourceType(String resourceType) {
+            this.resourceType = resourceType;
+            return this.result;
+        }
+
+        public ParentBuilder endGenerate(){
+            return this.parent;
+        }
+
+        BuilderType context(GenerationContext context){
+            this.context = context;
+            return this.result;
+        }
+
+        protected abstract GenerationRun build();
+
     }
 
-    private static final GeneratePojo jsonExample() {
-        return new GeneratePojo() {
-            @Override
-            public void generate(Pojo pojo, PojoExtractor<Class<?>> extractor) throws Exception {
-                generateJSonExample(pojo, extractor);
-            }
-        };
-    }
-
-    private static final GeneratePojo pojoImpl(final Plugin... plugins){
-        return new GeneratePojo() {
-            @Override
-            public void generate(Pojo pojo, PojoExtractor<Class<?>> extractor) throws Exception {
-                generatePojoImpl(pojo, extractor, plugins);
-            }
-        };
-    }
-
-    private static final GeneratePojo failureMapper(){
-        return new GeneratePojo() {
-            @Override
-            public void generate(Pojo pojo, PojoExtractor<Class<?>> extractor) throws Exception {
-                generateFailureMapper(pojo, extractor);
-            }
-        };
-    }
 }

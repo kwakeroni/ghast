@@ -1,4 +1,8 @@
-package example.generatePojo;
+package example.generatePojo.dependency;
+
+import com.google.common.base.Function;
+import com.google.common.base.Supplier;
+import org.apache.poi.ss.formula.functions.T;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -6,18 +10,21 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * @author Maarten Van Puymbroeck
  */
-public class MavenClassSource {
+public class ClassSource {
 
         private URLClassLoader loader;
 
-        private MavenClassSource(Builder builder) {
+        private ClassSource(Builder builder) {
             this.loader = new URLClassLoader(builder.urls.toArray(new URL[builder.urls.size()]), builder.parent);
 
             for (URL url : builder.urls){
@@ -35,77 +42,98 @@ public class MavenClassSource {
             try {
                 return this.loader.loadClass(name);
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException(e);
+                throw new IllegalArgumentException("Class not found in " + Arrays.toString(this.loader.getURLs()), e);
             }
         }
 
-
-    private static class Artefact {
-
-        final String groupId;
-        final String artifactId;
-        final String version;
-
-        public Artefact(String groupId, String artifactId, String version) {
-            this.artifactId = artifactId;
-            this.groupId = groupId;
-            this.version = version;
-        }
-
-        public URL getJarURL(Path root){
-            try {
-                return root.resolve(getJarPath()).toUri().toURL();
-            } catch (MalformedURLException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
-
-        public Path getJarPath(){
-            return Paths.get(groupId.replaceAll("\\.", "/"))
-                        .resolve(artifactId)
-                        .resolve(version)
-                        .resolve(getJarFileName());
-        }
-
-        public String getJarFileName(){
-            return MessageFormat.format("{1}-{2}.jar", groupId, artifactId, version);
-        }
-    }
 
     public static Builder newBuilder(ClassLoader parent){
         return new Builder(parent);
     }
 
-    public static final class Builder {
-        private Path repo;
+    public static MavenConfiguration maven(){
+        return new MavenConfiguration();
+    }
+
+    public static ConfiguredURLSupplier artefact(String groupId, String artifactId, String version){
+        return new MavenArtefact(groupId, artifactId, version);
+    }
+
+    public static ConfiguredURLSupplier mavenModule(String path){
+        return mavenModule(Paths.get(path));
+    }
+
+    public static ConfiguredURLSupplier mavenModule(Path path){
+        return new MavenProject(path);
+    }
+
+    public static final class Builder implements Configuration {
+
         private ClassLoader parent;
         private List<URL> urls = new ArrayList<>();
+        private Map<Class<?>, Object> config = new HashMap<>(1);
 
         private Builder(ClassLoader parent) {
             this.parent = parent;
         }
 
-        public Builder atRepository(String path){
-            this.repo = Paths.get(path);
+        public Builder configure(Object configuration){
+            this.config.put(configuration.getClass(), configuration);
             return this;
         }
 
-        public Builder addArtefact(String groupId, String artifactId, String version){
-            urls.add(new Artefact(groupId, artifactId, version).getJarURL(this.repo));
+        @Override
+        public <T> T getConfiguration(Class<T> type) {
+            return type.cast(config.containsKey(type) ? config.get(type) : doThrow(noSuchElement(), type));
+        }
+
+        @Override
+        public boolean hasConfiguration(Class<?> type) {
+            return config.containsKey(type);
+        }
+
+        public Builder add(URL url){
+            urls.add(url);
             return this;
         }
+
+        public Builder add(Supplier<? extends URL> urlSupplier){
+            return add(urlSupplier.get());
+        }
+
+        public Builder add(ConfiguredURLSupplier urlSupplier){
+            return add(urlSupplier.get(this));
+        }
+
 
         public Builder addCompilationTarget(Path path){
-            try {
-                urls.add(path.resolve("target/classes").toUri().toURL());
-            } catch (MalformedURLException e) {
-                throw new IllegalArgumentException(e);
-            }
             return this;
         }
 
-        public MavenClassSource build() {
-            return new MavenClassSource(this);
+        public ClassSource build() {
+            return new ClassSource(this);
         }
+    }
+
+    public interface ConfiguredURLSupplier {
+        URL get(Configuration config);
+    }
+
+    interface Configuration {
+        boolean hasConfiguration(Class<?> type);
+        <T> T getConfiguration(Class<T> type);
+    }
+
+    private static <T, I, X extends Throwable> T doThrow(Function<? super I, ? extends X> throwable, I input) throws X {
+        throw throwable.apply(input);
+    }
+
+    private static Function<Object, NoSuchElementException> noSuchElement(){
+        return new Function<Object, NoSuchElementException>() {
+            @Override
+            public NoSuchElementException apply(Object input) {
+                return new NoSuchElementException(String.valueOf(input));
+            }
+        };
     }
 }
