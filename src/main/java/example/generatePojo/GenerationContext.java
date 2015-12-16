@@ -23,6 +23,7 @@ public class GenerationContext {
     private final ClassSource classes;
     private final List<String> sourceClasses;
     private final List<GenerationRun> generations = new ArrayList<>();
+    private final PojoExtractor<Class<?>> extractor;
 
     protected GenerationContext(Builder<?, ?> builder) {
         classes = builder.classes.build();
@@ -30,8 +31,12 @@ public class GenerationContext {
         for (GenerationRun.Builder<? extends GenerationRun.Builder<?,?>, ?> generator : builder.generators) {
             this.generations.add(generator.context(this).build());
         }
+        extractor = (builder.extractor == null) ? new GetterInterfacePojoExtractor() : builder.extractor;
     }
 
+    public PojoExtractor<Class<?>>  getExtractor(){
+        return extractor;
+    }
 
     public Class<?> classForName(String name) {
         return this.classes.forName(name);
@@ -62,6 +67,7 @@ public class GenerationContext {
     public static abstract class Builder<BuilderType, Result extends GenerationContext> {
         private ClassSource.Builder classes = ClassSource.newBuilder(Generator.class.getClassLoader());
         private final List<String> sourceClasses = new ArrayList<>();
+        private PojoExtractor<Class<?>> extractor;
 
         private Path rootModule;
         private Path currentModule;
@@ -138,13 +144,18 @@ public class GenerationContext {
             return this.result;
         }
 
-        public <RunBuilderType extends GenerationRun.Builder<?,?>> GenerationRun.Builder<RunBuilderType, GenerationContext.Builder<BuilderType, Result>> generate(Supplier<? extends GenerationRun.Builder<RunBuilderType, BuilderType>> generatorSupplier) {
+        public BuilderType extractAs(PojoExtractor<Class<?>> extractor){
+            this.extractor = extractor;
+            return this.result;
+        }
+
+        public <RunBuilderType extends GenerationRun.Builder<?,?>> RunBuilderType generate(Supplier<? extends GenerationRun.Builder<RunBuilderType, BuilderType>> generatorSupplier) {
             GenerationRun.Builder<RunBuilderType, GenerationContext.Builder<BuilderType, Result>>
                 generator = generatorSupplier.get()
                                 .target(getCurrentModuleTarget())
                                 .parent(this);
             this.generators.add(generator);
-            return generator;
+            return (RunBuilderType) generator;
         }
 
         private Path getCurrentModuleTarget() {

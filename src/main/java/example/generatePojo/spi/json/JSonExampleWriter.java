@@ -87,7 +87,7 @@ public class JSonExampleWriter extends CodeWriterSupport<Pojo> {
         } else if (java.util.Date.class.isAssignableFrom(type)){
             return quote("1981-12-14");
         } else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(propertyType + " " + propertyName.or("<anonymous>"));
         }
     }
 

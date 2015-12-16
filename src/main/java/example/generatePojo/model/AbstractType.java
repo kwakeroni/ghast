@@ -21,19 +21,19 @@ public abstract class AbstractType implements Type {
 //
 //    }
 
-    public static Iterable<Type> of(java.lang.reflect.Type[] types){
+    public static Iterable<Type> of(java.lang.reflect.Type[] types) {
         return of(Arrays.asList(types));
     }
 
-    public static Iterable<Type> of(Iterable<java.lang.reflect.Type> types){
+    public static Iterable<Type> of(Iterable<java.lang.reflect.Type> types) {
         return Iterables.transform(types, reflectAsType());
     }
 
-    private static Iterable<Class<?>> dependenciesOf(Iterable<Type> types){
+    private static Iterable<Class<?>> dependenciesOf(Iterable<Type> types) {
         return Iterables.concat(Iterables.transform(types, Type.$getTypeDeclarationDependencies));
     }
 
-    private static Function<java.lang.reflect.Type, Type> reflectAsType(){
+    private static Function<java.lang.reflect.Type, Type> reflectAsType() {
         return new Function<java.lang.reflect.Type, Type>() {
             @Override
             public Type apply(java.lang.reflect.Type input) {
@@ -42,33 +42,33 @@ public abstract class AbstractType implements Type {
         };
     }
 
-    public static Type of(java.lang.reflect.Type type){
-        if (type instanceof Class){
+    public static Type of(java.lang.reflect.Type type) {
+        if (type instanceof Class) {
             return of((Class<?>) type);
-        } else if (type instanceof GenericArrayType){
+        } else if (type instanceof GenericArrayType) {
             return of((GenericArrayType) type);
-        } else if (type instanceof ParameterizedType){
+        } else if (type instanceof ParameterizedType) {
             return of((ParameterizedType) type);
-        } else if (type instanceof TypeVariable){
+        } else if (type instanceof TypeVariable) {
             return of((TypeVariable<?>) type);
-        } else if (type instanceof WildcardType){
+        } else if (type instanceof WildcardType) {
             return of((WildcardType) type);
         } else {
             throw new IllegalArgumentException(MessageFormat.format("Not recognized type {0} of type {1}", type, type.getClass()));
         }
     }
 
-    public static Type ofExternal(final String simpleName, final Type... params){
+    public static Type ofExternal(final String simpleName, final Type... params) {
         return new Type() {
             @Override
             public String getSimpleName() {
-                if (params.length == 0){
+                if (params.length == 0) {
                     return simpleName;
                 }
                 StringBuilder builder = new StringBuilder(simpleName).append('<');
                 boolean first = true;
-                for (Type param : params){
-                    if (first){
+                for (Type param : params) {
+                    if (first) {
                         first = false;
                     } else {
                         builder.append(", ");
@@ -98,24 +98,28 @@ public abstract class AbstractType implements Type {
             public Iterable<Class<?>> getTypeDeclarationDependencies() {
                 return dependenciesOf(Arrays.asList(params));
             }
+
+            public String toString() {
+                return getSimpleName();
+            }
         };
     }
 
-    public static Type ofGeneric(final Class<?> rawClass, final Type... params){
-        if (rawClass.getTypeParameters().length != params.length){
+    public static Type ofGeneric(final Class<?> rawClass, final Type... params) {
+        if (rawClass.getTypeParameters().length != params.length) {
             throw new IllegalArgumentException("Cannot parameterize " + rawClass + " with " + params.length + " type parameters");
         }
 
         return new Type() {
             @Override
             public String getSimpleName() {
-                if (params.length == 0){
+                if (params.length == 0) {
                     return rawClass.getSimpleName();
                 }
                 StringBuilder builder = new StringBuilder(rawClass.getSimpleName()).append('<');
                 boolean first = true;
-                for (Type param : params){
-                    if (first){
+                for (Type param : params) {
+                    if (first) {
                         first = false;
                     } else {
                         builder.append(", ");
@@ -145,10 +149,15 @@ public abstract class AbstractType implements Type {
             public Iterable<Class<?>> getTypeDeclarationDependencies() {
                 return Iterables.concat(Collections.singleton(rawClass), dependenciesOf(Arrays.asList(params)));
             }
+
+            public String toString() {
+                return getSimpleName();
+            }
+
         };
     }
 
-    private static Type of(final Class<?> clazz){
+    private static Type of(final Class<?> clazz) {
         return new Type() {
 
             public Class<?> getRawClass() {
@@ -167,17 +176,22 @@ public abstract class AbstractType implements Type {
 
             @Override
             public Iterable<Class<?>> getTypeDeclarationDependencies() {
-                return Collections.<Class<?>> singleton(clazz);
+                return Collections.<Class<?>>singleton(clazz);
             }
 
             @Override
             public boolean isEqualType(java.lang.reflect.Type type) {
                 return clazz.equals(type);
             }
+
+            public String toString() {
+                return getSimpleName();
+            }
+
         };
     }
 
-    private static Type of(final ParameterizedType type){
+    private static Type of(final ParameterizedType type) {
         final Class<?> rawClass = (Class<?>) type.getRawType();
         return new Type() {
 
@@ -193,7 +207,7 @@ public abstract class AbstractType implements Type {
             @Override
             public String getSimpleName() {
                 StringBuilder builder = new StringBuilder(rawClass.getSimpleName()).append('<');
-                for (java.lang.reflect.Type param : type.getActualTypeArguments()){
+                for (java.lang.reflect.Type param : type.getActualTypeArguments()) {
                     builder.append(of(param).getSimpleName());
                 }
                 return builder.append('>').toString();
@@ -208,10 +222,15 @@ public abstract class AbstractType implements Type {
             public boolean isEqualType(java.lang.reflect.Type other) {
                 return type.equals(other);
             }
+
+            public String toString() {
+                return getSimpleName();
+            }
+
         };
     }
 
-    private static Type of(final GenericArrayType type){
+    private static Type of(final GenericArrayType type) {
         final Type componentType = of(type.getGenericComponentType());
         return new Type() {
             @Override
@@ -226,7 +245,7 @@ public abstract class AbstractType implements Type {
 
             @Override
             public String getSimpleName() {
-                return componentType.getSimpleName()+"[]";
+                return componentType.getSimpleName() + "[]";
             }
 
             @Override
@@ -238,10 +257,15 @@ public abstract class AbstractType implements Type {
             public boolean isEqualType(java.lang.reflect.Type other) {
                 return type.equals(other);
             }
+
+            public String toString() {
+                return getSimpleName();
+            }
+
         };
     }
 
-    private static Type of(final TypeVariable<?> type){
+    private static Type of(final TypeVariable<?> type) {
         return new Type() {
             @Override
             public Class<?> getRawClass() {
@@ -267,10 +291,15 @@ public abstract class AbstractType implements Type {
             public boolean isEqualType(java.lang.reflect.Type other) {
                 return type.equals(other);
             }
+
+            public String toString() {
+                return getSimpleName();
+            }
+
         };
     }
 
-    private static Type of(final WildcardType type){
+    private static Type of(final WildcardType type) {
         return new Type() {
             @Override
             public Class<?> getRawClass() {
@@ -292,10 +321,15 @@ public abstract class AbstractType implements Type {
                 return dependenciesOf(Iterables.concat(of(type.getLowerBounds()), of(type.getUpperBounds())));
             }
 
-                        @Override
+            @Override
             public boolean isEqualType(java.lang.reflect.Type other) {
                 return type.equals(other);
             }
+
+            public String toString() {
+                return getSimpleName();
+            }
+
 
         };
     }

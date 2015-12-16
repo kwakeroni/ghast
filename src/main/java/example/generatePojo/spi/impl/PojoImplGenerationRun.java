@@ -13,19 +13,19 @@ import example.generatePojo.model.AbstractPojo;
 import example.generatePojo.model.Pojo;
 import example.generatePojo.model.Property;
 import example.generatePojo.model.Type;
-import javafx.scene.ParentBuilder;
 
 /**
  * @author Maarten Van Puymbroeck
  */
 public class PojoImplGenerationRun extends GenerationRun {
 
-        public final String TARGET_PACKAGE = "be.voo.esb.services.salescommissioning.startmobilecommissioning.core." + resourceType;
+    private Plugin[] plugins;
+    private String targetPackage;
 
-    private Plugin[] plugins = new Plugin[0];
-
-    public PojoImplGenerationRun(GenerationRun.Builder<?, ?> builder) {
+    public PojoImplGenerationRun(Builder<?> builder) {
         super(builder);
+        this.targetPackage = builder.pkg;
+        this.plugins = (builder.plugins == null)? new Plugin[0] : builder.plugins;
     }
 
     protected void generate(Pojo startPojo, PojoExtractor<Class<?>> extractor) throws Exception {
@@ -35,7 +35,7 @@ public class PojoImplGenerationRun extends GenerationRun {
 
         Iterable<Pojo> pojoImpls = Iterables.transform(
                                                           pojoSrcs,
-                                                          toPojoImpl(TARGET_PACKAGE, NAMING_STRATEGY));
+                                                          toPojoImpl(this.targetPackage, this.namingStrategy));
 
 
         PojoImplWriter writer = new PojoImplWriter(targetModule.resolve("src/main/java"), plugins);
@@ -83,7 +83,7 @@ public class PojoImplGenerationRun extends GenerationRun {
 
                     @Override
                     public String getName() {
-                        return getPackage() + "." + getSimpleName();
+                        return (getPackage() == null)? getSimpleName() : getPackage() + "." + getSimpleName();
                     }
 
                     @Override
@@ -147,8 +147,21 @@ public class PojoImplGenerationRun extends GenerationRun {
 
     public static final class Builder<ParentBuilder> extends GenerationRun.Builder<Builder<ParentBuilder>, ParentBuilder> {
 
+        String pkg;
+        Plugin[] plugins;
+
         private Builder() {
             super();
+        }
+
+        public Builder<ParentBuilder> inPackage(String pkg){
+            this.pkg = pkg;
+            return this.result;
+        }
+
+        public Builder<ParentBuilder> withPlugins(Plugin... plugins){
+            this.plugins = plugins;
+            return this.result;
         }
 
         @Override

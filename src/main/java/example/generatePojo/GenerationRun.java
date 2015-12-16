@@ -22,24 +22,20 @@ public abstract class GenerationRun {
     protected final boolean writeContents;
     protected final String resourceType;
     protected final GenerationContext context;
-    
-    public static final Function<String, String> NAMING_STRATEGY = Util.messageFormat("{0}Command");
-    
+    protected final Function<String, String> namingStrategy;
+
     protected GenerationRun(Builder<?, ?> builder){
         targetModule = builder.targetModule;
         printContents = builder.printContents;
         writeContents = builder.writeContents;
         resourceType = builder.resourceType;
         context = builder.context;
-
+        namingStrategy = builder.namingStrategy;
     }
     
 
     public void generate() throws Exception {
-        PojoExtractor<Class<?>> extractor = new GetterInterfacePojoExtractor();
-
-        generate(extractor, this.context.getSources());
-
+        generate(this.context.getExtractor(), this.context.getSources());
     }
 
     private void generate(PojoExtractor<Class<?>> extractor, Iterable<Class<?>> classes) throws Exception {
@@ -100,9 +96,9 @@ public abstract class GenerationRun {
         private boolean printContents = false;
         private boolean writeContents = false;
         private String resourceType;
+        private Function<String, String> namingStrategy;
 
-
-        private final BuilderType result;
+        protected final BuilderType result;
 
         protected Builder(){
             this.result = (BuilderType) this;
@@ -142,6 +138,15 @@ public abstract class GenerationRun {
         public BuilderType resourceType(String resourceType) {
             this.resourceType = resourceType;
             return this.result;
+        }
+
+        public BuilderType namedAs(Function<String, String> namingStrategy){
+            this.namingStrategy = namingStrategy;
+            return this.result;
+        }
+
+        public BuilderType namedAs(String namingFormat){
+            return namedAs(Util.messageFormat(namingFormat));
         }
 
         public ParentBuilder endGenerate(){

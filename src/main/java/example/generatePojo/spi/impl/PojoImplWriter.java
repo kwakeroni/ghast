@@ -57,14 +57,22 @@ public class PojoImplWriter extends ClassWriterSupport<Pojo> {
 
 
     protected Iterable<String> getMethods(Pojo pojo) {
-        return Iterables.concat(Iterables.transform(this.plugins, methods(pojo)));
+        return Iterables.concat(
+                    emptyLine(),
+                    Iterables.concat(Iterables.transform(this.plugins, methods(pojo))),
+                    Iterables.concat(Iterables.transform(pojo.getProperties(), propertyMethods()))
+        );
+    }
+
+    protected Iterable<String> getMethods(Property property) {
+        return Iterables.concat(Iterables.transform(this.plugins, methods(property)));
     }
 
 
     protected String getClassSignature(Pojo pojo) {
         return getClassSignature(pojo.getSimpleName(),
-                                 Optional.fromNullable(pojo.getExtends()),
-                                 Iterables.concat(Iterables.transform(plugins, implementedInterfaces(pojo))));
+                                    Optional.fromNullable(pojo.getExtends()),
+                                    Iterables.concat(Iterables.transform(plugins, implementedInterfaces(pojo))));
     }
 
     protected Iterable<String> getFields(Pojo pojo) {
@@ -108,10 +116,30 @@ public class PojoImplWriter extends ClassWriterSupport<Pojo> {
         return new Function<Plugin, Iterable<String>>() {
             @Override
             public Iterable<String> apply(Plugin input) {
-                return Iterables.concat(emptyLine(), input.getMethods(pojo));
+                return input.getMethods(pojo);
             }
         };
     }
+
+    private Function<Plugin, Iterable<String>> methods(final Property property) {
+        return new Function<Plugin, Iterable<String>>() {
+            @Override
+            public Iterable<String> apply(Plugin input) {
+                return input.getMethods(property);
+            }
+        };
+    }
+
+    private Function<Property, Iterable<String>> propertyMethods(){
+        return new Function<Property, Iterable<String>>() {
+            @Override
+            public Iterable<String> apply(Property input) {
+                return getMethods(input);
+            }
+        };
+    }
+
+
 
     private static List<Plugin> asList(Plugin first, Plugin... rest) {
         List<Plugin> list = new ArrayList<>(1 + ((rest == null)? 0 : rest.length));

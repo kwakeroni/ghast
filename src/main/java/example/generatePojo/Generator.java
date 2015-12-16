@@ -1,5 +1,6 @@
 package example.generatePojo;
 
+import example.generatePojo.spi.impl.GetterPlugin;
 import example.generatePojo.spi.impl.PojoImplGenerationRun;
 import example.generatePojo.spi.json.JSonGenerationRun;
 
@@ -12,32 +13,38 @@ public class Generator {
 
         GenerationContext.newBuilder()
             .configure(maven().at("/home/talend/.m2/repository"))
-            .addClassesFrom(artefact("be.voo.esb.services.mobilelifecycle", "mobilelifecycle-api", "1.0.0-SNAPSHOT"))
-//            .addSources("be.voo.esb.external.fast.managesalesinventory.api.domain.NotifySubscriptionUpdated")
+            .addClassesFrom(artefact("be.voo.esb.services.mobilelifecycle", "mobilelifecycle-api", "3.0.0"))
+            .addSources("be.voo.services.mobilelifecycle.api.event.SubscriptionMsisdnChanged")
 
-            .atRoot("/home/talend/voo-services/salescommissioning/")
-                .inModule("salescommissioning-api")
-                    .addClasses()
-                    .addSources("be.voo.esb.services.salescommissioning.api.event.StartMobileCommissioningProcessingFailed")
+            .atRoot("/home/talend/voo-esb/")
+                .inModule("voodatamodel-api")
+                    .inModule("chan")
+                        .inModule("effortel")
+                            .addClasses()
+//                            .addSources("be.voo.csp.esb1.channel.mobile.effortel.mobileorderhandling_v1.NotifyMSISDNChangeCompletedRequest")
+//                            .extractAs(new BeanGetterExtractor())
+                        .back()
+                    .back()
                 .back()
-                .inModule("salescommissioning-commandhandlers")
-                    .inModule("salescommissioning-startmobilecommissioning")
-                        .inModule("salescommissioning-startmobilecommissioning-core")
+                .inModule("voodatamodel-services")
+                    .inModule("chan")
+                        .inModule("effortel")
                         .addClasses()
-                        .generate(PojoImplGenerationRun.<GenerationContext.GenerationContextBuilder> pojoImpl() )
-                            .writeGeneratedContent(true)
-                            .printGeneratedContent()
-                            .resourceType("event")
-                            .endGenerate()
-                        .generate(JSonGenerationRun.<GenerationContext.GenerationContextBuilder> jsonExample())
+                        .generate(PojoImplGenerationRun.<GenerationContext.GenerationContextBuilder>pojoImpl())
+                            .withPlugins(new GetterPlugin())
+                            .inPackage("be.voo.esb.voochannel.effortel.event")
+                            .namedAs("Default{0}")
                             .writeGeneratedContent(false)
                             .printGeneratedContent()
                             .resourceType("event")
-                            .endGenerate()
+                        .endGenerate()
+                        .generate(JSonGenerationRun.<GenerationContext.GenerationContextBuilder> jsonExample())
+                            .writeGeneratedContent(true)
+                            .printGeneratedContent()
+                            .resourceType("json")
+                        .endGenerate()
             .build()
             .generate();
-
-
 
     }
 

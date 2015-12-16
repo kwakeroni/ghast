@@ -25,6 +25,15 @@ public class Util {
         return value.substring(prefix.length());
     }
 
+    public static boolean hasPrefix(String value, String... prefixes) {
+        for (String prefix : prefixes) {
+            if (value.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String getPrefix(String value, String... prefixes) {
         for (String prefix : prefixes) {
             if (value.startsWith(prefix)) {
@@ -46,11 +55,28 @@ public class Util {
         return Iterables.transform(interfaces, directInterfaces());
     }
 
+    public static Iterable<Class<?>> getRecursiveSuperclasses(final Class<?> child){
+        if (Object.class == child){
+            return Collections.<Class<?>> singleton(Object.class);
+        } else {
+            return Iterables.concat(Collections.singleton(child), getRecursiveSuperclasses(child.getSuperclass()));
+        }
+    }
+
     public static Function<Class<?>, Iterable<Class<?>>> directInterfaces() {
         return new Function<Class<?>, Iterable<Class<?>>>() {
             @Override
             public Iterable<Class<?>> apply(Class<?> input) {
                 return getDirectInterfaces(input);
+            }
+        };
+    }
+
+    public static Function<Class<?>, Iterable<Class<?>>> recursiveSuperClasses(){
+        return new Function<Class<?>, Iterable<Class<?>>>() {
+            @Override
+            public Iterable<Class<?>> apply(Class<?> input) {
+                return getRecursiveSuperclasses(input);
             }
         };
     }

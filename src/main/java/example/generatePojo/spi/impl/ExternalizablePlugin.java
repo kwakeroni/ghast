@@ -19,7 +19,7 @@ import java.util.Collections;
 /**
  * @author Maarten Van Puymbroeck
  */
-public class ExternalizablePlugin implements Plugin {
+public class ExternalizablePlugin extends PluginSupport {
 
     @Override
     public Iterable<Class<?>> getImportedClasses(Pojo pojo) {
