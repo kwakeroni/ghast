@@ -6,7 +6,7 @@ import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Iterables;
 import example.generatePojo.GenerationRun;
-import example.generatePojo.GetterInterfacePojoExtractor;
+import example.generatePojo.extract.GetterInterfacePojoExtractor;
 import example.generatePojo.PojoExtractor;
 import example.generatePojo.Util;
 import example.generatePojo.model.AbstractPojo;

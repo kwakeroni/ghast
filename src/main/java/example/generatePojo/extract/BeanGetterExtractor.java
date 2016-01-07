@@ -1,7 +1,8 @@
-package example.generatePojo;
+package example.generatePojo.extract;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import example.generatePojo.Util;
 import example.generatePojo.model.Pojo;
 
 import java.lang.reflect.Method;

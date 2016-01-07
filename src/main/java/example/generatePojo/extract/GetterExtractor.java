@@ -1,8 +1,10 @@
-package example.generatePojo;
+package example.generatePojo.extract;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import example.generatePojo.PojoExtractor;
+import example.generatePojo.Util;
 import example.generatePojo.model.AbstractPojo;
 import example.generatePojo.model.AbstractType;
 import example.generatePojo.model.Property;

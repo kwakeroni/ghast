@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Iterables;
 import example.generatePojo.dependency.ClassSource;
+import example.generatePojo.extract.GetterInterfacePojoExtractor;
 
 import java.net.URL;
 import java.nio.file.Files;

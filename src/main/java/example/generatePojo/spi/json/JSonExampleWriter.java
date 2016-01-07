@@ -60,7 +60,7 @@ public class JSonExampleWriter extends CodeWriterSupport<Pojo> {
     private Iterable<String> toExampleValue(String firstLinePrefix, String prefix, Type propertyType, String lastLinePostfix, Optional<String> propertyName){
        if (isSimpleValue(propertyType)){
            return line(firstLinePrefix + toSimpleExampleValue(propertyType, propertyName) + lastLinePostfix);
-       } else if (Collection.class.isAssignableFrom(propertyType.getRawClass())){
+       } else if (propertyType.getRawClass().isArray() || Collection.class.isAssignableFrom(propertyType.getRawClass())){
            return toCollectionExampleValue(firstLinePrefix, prefix, propertyType, lastLinePostfix);
        } else {
            return toObjectExampleValue(firstLinePrefix, prefix, propertyType, lastLinePostfix);
@@ -69,7 +69,12 @@ public class JSonExampleWriter extends CodeWriterSupport<Pojo> {
 
     private boolean isSimpleValue(Type propertyType){
         Class<?> type = propertyType.getRawClass();
-        return type.isEnum() || java.util.Date.class.isAssignableFrom(type) || type.getPackage() == null || type.getPackage().getName() == null || "java.lang".equals(type.getPackage().getName());
+        return type.isEnum()
+                || type.isPrimitive()
+                || type.getName().startsWith("java.lang")
+                || java.util.Date.class.isAssignableFrom(type)
+                || java.lang.Number.class.isAssignableFrom(type)
+                ;
     };
 
     private String toSimpleExampleValue(Type propertyType, Optional<String> propertyName){

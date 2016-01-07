@@ -166,7 +166,15 @@ public abstract class AbstractType implements Type {
 
             @Override
             public Type getParameterType(int index) {
-                throw new UnsupportedOperationException(clazz + " has no generic parameters");
+                if (clazz.isArray()){
+                    if (index == 0){
+                        return AbstractType.of(clazz.getComponentType());
+                    } else {
+                        throw new UnsupportedOperationException("Array type " + clazz + " has only one parameter not " + (index+1));
+                    }
+                } else {
+                    throw new UnsupportedOperationException(clazz + " has no generic parameters");
+                }
             }
 
             @Override
