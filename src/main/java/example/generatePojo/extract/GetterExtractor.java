@@ -2,6 +2,7 @@ package example.generatePojo.extract;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import example.generatePojo.PojoExtractor;
 import example.generatePojo.Util;
@@ -15,7 +16,7 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
+import static com.google.common.base.Predicates.*;
 /**
  * @author Maarten Van Puymbroeck
  */
@@ -54,7 +55,7 @@ abstract class GetterExtractor implements PojoExtractor<Class<?>> {
                 boolean result =
                     method.getParameterTypes().length == 0
                     && (! method.getReturnType().equals(Void.TYPE))
-                    && Util.hasPrefix(method.getName(), prefixes)
+                    && ( Util.hasPrefix(method.getName(), prefixes) || method.getReturnType().equals(Boolean.TYPE) )
                     && (! "getClass".equals(method.getName()))
                     && (! "hashCode".equals(method.getName()));
 
@@ -81,7 +82,17 @@ abstract class GetterExtractor implements PojoExtractor<Class<?>> {
 
         @Override
         public String getName() {
-            return StringUtils.uncapitalize(Util.removePrefix(method.getName(), prefixes));
+            String name;
+            try {
+                name = Util.removePrefix(method.getName(), prefixes);
+            } catch (IllegalArgumentException exc){
+                if (method.getReturnType().equals(Boolean.TYPE)){
+                    name = method.getName();
+                } else {
+                    throw exc;
+                }
+            }
+            return StringUtils.uncapitalize(name);
         }
 
         @Override
@@ -125,10 +136,10 @@ abstract class GetterExtractor implements PojoExtractor<Class<?>> {
 
             return Iterables.<Method, Property>transform(Iterables.filter(
                                                                              Iterables.concat(
-                                                                                                 Iterables.transform(
-                                                                                                                        getClassHierarchy(baseClass),
-                                                                                                                        methods())
-                                                                             ), distinct()), toGetterProperty()
+                                                                                 Iterables.transform(
+                                                                                     getClassHierarchy(baseClass),
+                                                                                     methods())
+                                                                             ), and(isGetter(), distinct())), toGetterProperty()
             );
 
         }

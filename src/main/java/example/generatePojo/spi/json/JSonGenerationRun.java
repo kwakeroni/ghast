@@ -17,8 +17,12 @@ public class JSonGenerationRun extends GenerationRun {
     protected void generate(Pojo startPojo, PojoExtractor<Class<?>> extractor) throws Exception {
         JSonExampleWriter writer = new JSonExampleWriter(targetModule.resolve("src/test/resources/" + resourceType + "/"), extractor);
 
-        if (printContents) writer.printOut(startPojo);
-        if (writeContents) writer.write(startPojo);
+        try {
+            if (printContents) writer.printOut(startPojo);
+            if (writeContents) writer.write(startPojo);
+        } catch (Exception exc){
+            exc.printStackTrace();
+        }
     }
 
     public static final class Builder<ParentBuilder> extends GenerationRun.Builder<Builder<ParentBuilder>, ParentBuilder> {

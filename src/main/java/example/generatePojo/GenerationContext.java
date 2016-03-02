@@ -6,6 +6,7 @@ import com.google.common.collect.Iterables;
 import example.generatePojo.dependency.ClassSource;
 import example.generatePojo.extract.GetterInterfacePojoExtractor;
 
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -143,6 +144,21 @@ public class GenerationContext {
         public BuilderType addSources(String... classNames){
             this.sourceClasses.addAll(Arrays.asList(classNames));
             return this.result;
+        }
+
+        public BuilderType addSourcesIn(String sourcePath, String pkg){
+            try {
+                List<String> classes = new ArrayList<>();
+                for (Path p : Files.newDirectoryStream( getCurrentModuleTarget().resolve(sourcePath).resolve(pkg.replace('.', '/')) )){
+                    String fileName = p.getFileName().toString();
+                    if (fileName.endsWith(".java")){
+                        classes.add(pkg+"."+fileName.substring(0, fileName.length()-5));
+                    }
+                }
+                return addSources(classes.toArray(new String[classes.size()]));
+            } catch (IOException exc){
+                throw new RuntimeException(exc);
+            }
         }
 
         public BuilderType extractAs(PojoExtractor<Class<?>> extractor){

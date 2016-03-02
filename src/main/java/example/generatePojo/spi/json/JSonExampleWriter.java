@@ -1,6 +1,7 @@
 package example.generatePojo.spi.json;
 
 import example.generatePojo.PojoExtractor;
+import example.generatePojo.model.AbstractType;
 import example.generatePojo.spi.CodeWriterSupport;
 import example.generatePojo.model.Pojo;
 import example.generatePojo.model.Property;
@@ -43,9 +44,9 @@ public class JSonExampleWriter extends CodeWriterSupport<Pojo> {
     @Override
     protected Iterable<String> toCode(Pojo pojo) {
         return Iterables.concat(
-                                   line("{"),
-                                   propertiesToCode(pojo, ""),
-                                   line("}")
+            line("{"),
+            propertiesToCode(pojo, ""),
+            line("}")
         );
     }
 
@@ -74,8 +75,25 @@ public class JSonExampleWriter extends CodeWriterSupport<Pojo> {
                 || type.getName().startsWith("java.lang")
                 || java.util.Date.class.isAssignableFrom(type)
                 || java.lang.Number.class.isAssignableFrom(type)
+                || isValueType(type)
                 ;
     };
+
+    private boolean isValueType(Class<?> type){
+        return (! type.isInterface()) &&
+            (    (type.getConstructors().length == 0 && type.getDeclaredFields().length == 1)
+              || (type.getConstructors().length == 1 && type.getConstructors()[0].getParameterTypes().length == 1) );
+    }
+
+    private Class<?> getInnerValueType(Class<?> valueType){
+        if (valueType.getConstructors().length == 1 && valueType.getConstructors()[0].getParameterTypes().length == 1){
+            return valueType.getConstructors()[0].getParameterTypes()[0];
+        } else if (valueType.getConstructors().length == 0 && valueType.getDeclaredFields().length == 1){
+            return valueType.getDeclaredFields()[0].getType();
+        } else {
+            throw new IllegalArgumentException("Not a recognized value type: " + valueType);
+        }
+    }
 
     private String toSimpleExampleValue(Type propertyType, Optional<String> propertyName){
         Class<?> type = propertyType.getRawClass();
@@ -91,6 +109,8 @@ public class JSonExampleWriter extends CodeWriterSupport<Pojo> {
             return quote(propertyName.or("abcd"));
         } else if (java.util.Date.class.isAssignableFrom(type)){
             return quote("1981-12-14");
+        } else if (isValueType(type)){
+            return toSimpleExampleValue(AbstractType.of(getInnerValueType(type)), propertyName);
         } else {
             throw new IllegalArgumentException(propertyType + " " + propertyName.or("<anonymous>"));
         }

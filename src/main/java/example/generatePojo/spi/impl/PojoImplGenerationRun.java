@@ -14,6 +14,8 @@ import example.generatePojo.model.Pojo;
 import example.generatePojo.model.Property;
 import example.generatePojo.model.Type;
 
+import java.util.Objects;
+
 /**
  * @author Maarten Van Puymbroeck
  */
@@ -29,6 +31,8 @@ public class PojoImplGenerationRun extends GenerationRun {
     }
 
     protected void generate(Pojo startPojo, PojoExtractor<Class<?>> extractor) throws Exception {
+
+        Objects.requireNonNull(this.targetPackage, "Pojo implementation target package");
 
         Iterable<Pojo> pojoSrcs = Util.distinct(Util.recurse(startPojo, dependentPojos(extractor)), isEqualPojo());
 

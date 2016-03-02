@@ -1,6 +1,7 @@
 package example.generatePojo.spi;
 
 import com.google.common.base.Supplier;
+import example.generatePojo.spi.ftl.TemplateGenerationRun;
 import example.generatePojo.spi.impl.PojoImplGenerationRun;
 import example.generatePojo.spi.json.JSonGenerationRun;
 
@@ -19,6 +20,10 @@ public class Generators {
 
     public static final <ParentType> Supplier<JSonGenerationRun.Builder<ParentType>> jsonExample(){
         return JSonGenerationRun.jsonExample();
+    }
+
+    public static final <ParentType> Supplier<TemplateGenerationRun.Builder<ParentType>> template(){
+        return TemplateGenerationRun.pojoTemplate();
     }
 
 }

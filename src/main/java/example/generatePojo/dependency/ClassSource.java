@@ -42,7 +42,7 @@ public class ClassSource {
             try {
                 return this.loader.loadClass(name);
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Class not found in " + Arrays.toString(this.loader.getURLs()), e);
+                throw new IllegalArgumentException("Class " + name + " not found in " + Arrays.toString(this.loader.getURLs()), e);
             }
         }
 
