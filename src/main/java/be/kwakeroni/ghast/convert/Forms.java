@@ -3,11 +3,13 @@ package be.kwakeroni.ghast.convert;
 import be.kwakeroni.ghast.convert.form.ByteArrayContent;
 import be.kwakeroni.ghast.convert.type.MimeAwareType;
 import be.kwakeroni.ghast.convert.type.NativeAwareType;
+import be.kwakeroni.ghast.convert.type.TextualType;
 
 import java.awt.*;
 import java.awt.datatransfer.*;
 import java.io.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class Forms {
@@ -17,24 +19,25 @@ public final class Forms {
     }
 
     public static <Type extends MimeAwareType & NativeAwareType>
-    FormMapper<Type, Content<Type, byte[]>, ByteArrayContent<Type>> clipboard() {
+    Function<Content<Type, byte[]>, ByteArrayContent<Type>> clipboard() {
         return Clipboard.asDeclaredType();
     }
 
     public static class Clipboard {
 
-        public static <Type> FormMapper<Type, Content<Type, byte[]>, ByteArrayContent<Type>> asText() {
-            return FormMapper.of(bytes -> {
-                System.out.println("Writing to clipboard: " + new String(bytes));
-                copyToClipboard(new StringSelection(new String(bytes)));
+        public static <Type extends TextualType> Function<Content<Type, byte[]>, ByteArrayContent<Type>> asText() {
+            return ContentMappers.mappingForm((type, bytes) -> {
+                String string = type.toString(bytes);
+                System.out.println("Writing to clipboard: " + string);
+                copyToClipboard(new StringSelection(string));
                 return bytes;
             }, ByteArrayContent::of);
 
         }
 
         public static <Type extends MimeAwareType & NativeAwareType>
-                FormMapper<Type, Content<Type, byte[]>, ByteArrayContent<Type>> as(Type type) {
-            return FormMapper.of(bytes -> {
+        Function<Content<Type, byte[]>, ByteArrayContent<Type>> as(Type type) {
+            return ContentMappers.mappingForm(bytes -> {
                 System.out.println("Writing to clipboard: " + bytes.length + " bytes as " + type.getMimeType());
                 copyToClipboard(getBinaryTransferable(type, type, bytes));
                 return bytes;
@@ -43,8 +46,8 @@ public final class Forms {
         }
 
         public static <Type extends MimeAwareType & NativeAwareType>
-        FormMapper<Type, Content<Type, byte[]>, ByteArrayContent<Type>> asDeclaredType() {
-            return FormMapper.of((type, bytes) -> {
+        Function<Content<Type, byte[]>, ByteArrayContent<Type>> asDeclaredType() {
+            return ContentMappers.mappingForm((type, bytes) -> {
                 System.out.println("Writing to clipboard: " + bytes.length + " bytes as " + type.getMimeType());
                 copyToClipboard(getBinaryTransferable(type, type, bytes));
                 return bytes;
@@ -71,7 +74,8 @@ public final class Forms {
 
     private static void copyToClipboard(Transferable contents) {
         try {
-            copyToClipboard(() -> {}, contents);
+            copyToClipboard(() -> {
+            }, contents);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -92,23 +96,23 @@ public final class Forms {
         }
     }
 
-    private static void registerFormatToNative(DataFlavor flavor, NativeAwareType type){
+    private static void registerFormatToNative(DataFlavor flavor, NativeAwareType type) {
         SystemFlavorMap flavorMap = ((SystemFlavorMap) SystemFlavorMap.getDefaultFlavorMap());
         String nativeType = type.getNativeTypeId();
 //        flavorMap.addUnencodedNativeForFlavor(format.getDataFlavor(), nativeType);
-        if (flavorMap.getNativesForFlavor(flavor).stream().noneMatch(nat -> nat.startsWith(nativeType))){
+        if (flavorMap.getNativesForFlavor(flavor).stream().noneMatch(nat -> nat.startsWith(nativeType))) {
             flavorMap.addUnencodedNativeForFlavor(flavor, nativeType);
         }
     }
 
-    private static Transferable getBinaryTransferable(MimeAwareType mimeType, NativeAwareType nativeType, byte[] bytes){
+    private static Transferable getBinaryTransferable(MimeAwareType mimeType, NativeAwareType nativeType, byte[] bytes) {
         DataFlavor dataFlavor = getDataFlavor(mimeType, nativeType);
         return new BinaryTransferable(dataFlavor, bytes);
     }
 
     private static DataFlavor getDataFlavor(MimeAwareType mimeType, NativeAwareType nativeType) {
         DataFlavor flavor = new DataFlavor(mimeType.getMimeType(), mimeType.getHumanPresentableName());
-        if (nativeType != null){
+        if (nativeType != null) {
             registerFormatToNative(flavor, nativeType);
         }
         return flavor;
@@ -121,6 +125,7 @@ public final class Forms {
         public BinaryTransferable(DataFlavor flavor, byte[] data) {
             this(flavor, () -> new ByteArrayInputStream(data));
         }
+
         public BinaryTransferable(DataFlavor flavor, Supplier<InputStream> supplier) {
             this.flavor = flavor;
             this.supplier = supplier;

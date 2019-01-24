@@ -180,7 +180,7 @@ public class Replacer {
 
     private static class Prepender extends RegexReplacement {
         public Prepender(String regex, String prefixPattern) {
-            super(regex, m -> MessageFormat.format(toMessageFormatPattern(prefixPattern), groups(m)) + m.group(0));
+            super(regex, m -> MessageFormat.format(toMessageFormatPattern(prefixPattern), (Object[]) groups(m)) + m.group(0));
         }
     }
 

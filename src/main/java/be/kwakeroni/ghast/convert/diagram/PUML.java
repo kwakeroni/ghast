@@ -6,19 +6,22 @@ import be.kwakeroni.ghast.convert.form.Generator;
 import be.kwakeroni.ghast.convert.image.EMF;
 import be.kwakeroni.ghast.convert.image.PNG;
 import be.kwakeroni.ghast.convert.image.SVG;
+import be.kwakeroni.ghast.convert.type.TextualType;
 import net.sourceforge.plantuml.FileFormat;
-import net.sourceforge.plantuml.FileFormatOption;
-import net.sourceforge.plantuml.SourceStringReader;
 
 import java.nio.file.Path;
 import java.util.function.Function;
 
-public final class PUML {
+public final class PUML implements TextualType {
 
     public static final PUML type = new PUML();
 
     private PUML() {
+    }
 
+    @Override
+    public String toString(byte[] bytes) {
+        return new String(bytes);
     }
 
     public static Function<Content<PUML, byte[]>, Generator<PNG>> png() {
@@ -31,9 +34,9 @@ public final class PUML {
 
     public static Function<Content<PUML, byte[]>, FileContent<EMF>> emf() {
         return content ->
-                content.mapTo(PUML.svg())
-                .toFile()
-                .mapTo(svgToEmf());
+                content.to(PUML.svg())
+                        .toFile()
+                        .to(svgToEmf());
     }
 
     public static Function<Content<SVG, Path>, FileContent<EMF>> svgToEmf() {

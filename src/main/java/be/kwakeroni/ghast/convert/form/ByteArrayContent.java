@@ -1,7 +1,6 @@
 package be.kwakeroni.ghast.convert.form;
 
 import be.kwakeroni.ghast.convert.Content;
-import be.kwakeroni.ghast.convert.TypeMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -11,10 +10,6 @@ import java.nio.file.Paths;
 import java.util.function.Supplier;
 
 public interface ByteArrayContent<Type> extends Content<Type, byte[]> {
-
-    default <NewType> ByteArrayContent<NewType> mapTo(TypeMapper<Type, NewType, byte[]> mapping) {
-        return mapping.map(this, ByteArrayContent::wrap);
-    }
 
     static Path toFile(String fileName, byte[] bytes) {
         return toFile(Paths.get(fileName), bytes);

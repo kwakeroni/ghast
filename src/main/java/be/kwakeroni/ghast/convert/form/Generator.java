@@ -1,7 +1,6 @@
 package be.kwakeroni.ghast.convert.form;
 
 import be.kwakeroni.ghast.convert.Content;
-import be.kwakeroni.ghast.convert.TypeMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -16,10 +15,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface Generator<Type> extends Content<Type, Consumer<OutputStream>> {
-
-    default <NewType> Generator<NewType> mapTo(TypeMapper<Type, NewType, Consumer<OutputStream>> mapping) {
-        return mapping.map(this, Generator::wrap);
-    }
 
     default ByteArrayContent<Type> toBytes() {
         return ByteArrayContent.of(type(), () -> {
@@ -63,6 +58,7 @@ public interface Generator<Type> extends Content<Type, Consumer<OutputStream>> {
     static <Type> Generator<Type> of(Type type, Consumer<OutputStream> source) {
         return of(type, () -> source);
     }
+
     static <Type> Generator<Type> of(Type type, Supplier<? extends Consumer<OutputStream>> source) {
         return new Generator<Type>() {
             @Override
@@ -81,7 +77,7 @@ public interface Generator<Type> extends Content<Type, Consumer<OutputStream>> {
         return content -> transforming(content, newType, transformer);
     }
 
-    static <OldType, OldForm, NewType> Generator<NewType> transforming(Content<OldType, OldForm> content, NewType newType, BiConsumer<OldForm, OutputStream> transformer){
+    static <OldType, OldForm, NewType> Generator<NewType> transforming(Content<OldType, OldForm> content, NewType newType, BiConsumer<OldForm, OutputStream> transformer) {
         return Generator.of(newType, () -> outputStream -> {
             transformer.accept(content.get(), outputStream);
         });

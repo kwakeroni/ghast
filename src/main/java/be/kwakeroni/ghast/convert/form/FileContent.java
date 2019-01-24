@@ -1,7 +1,6 @@
 package be.kwakeroni.ghast.convert.form;
 
 import be.kwakeroni.ghast.convert.Content;
-import be.kwakeroni.ghast.convert.TypeMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -13,11 +12,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface FileContent<Type> extends Content<Type, Path> {
-
-
-    default <NewType> FileContent<NewType> mapTo(TypeMapper<Type, NewType, Path> mapping) {
-        return mapping.map(this, FileContent::wrap);
-    }
 
     default FileContent<Type> toFile(String destination) {
         return toFile(Paths.get(destination));
@@ -56,10 +50,12 @@ public interface FileContent<Type> extends Content<Type, Path> {
     static <Type> FileContent<Type> of(Type type, String sourceFile) {
         return of(type, () -> Paths.get(sourceFile));
     }
+
     static <Type> FileContent<Type> of(Type type, Path source) {
         return of(type, () -> source);
     }
-    static <Type> FileContent<Type> of(Type type, Supplier<? extends Path> supplier){
+
+    static <Type> FileContent<Type> of(Type type, Supplier<? extends Path> supplier) {
         return new FileContent<Type>() {
             @Override
             public Type type() {
@@ -73,11 +69,11 @@ public interface FileContent<Type> extends Content<Type, Path> {
         };
     }
 
-    static <OldType, OldForm, NewType> Function<Content<OldType, OldForm>, FileContent<NewType>> transformer(NewType newType, BiConsumer<OldForm, Path> transformer){
+    static <OldType, OldForm, NewType> Function<Content<OldType, OldForm>, FileContent<NewType>> transformer(NewType newType, BiConsumer<OldForm, Path> transformer) {
         return content -> transforming(content, newType, transformer);
     }
 
-    static <OldType, OldForm, NewType> FileContent<NewType> transforming(Content<OldType, OldForm> content, NewType newType, BiConsumer<OldForm, Path> transformer){
+    static <OldType, OldForm, NewType> FileContent<NewType> transforming(Content<OldType, OldForm> content, NewType newType, BiConsumer<OldForm, Path> transformer) {
         return new FileContent<NewType>() {
             private Path target = null;
 
